@@ -1,0 +1,17 @@
+# copy this systemd unit into /lib/systemd/system/
+# sudo chmod 644 /lib/systemd/system/astro_pi_demo.service
+# sudo systemctl daemon-reload
+# sudo systemctl enable astro_pi_demo.service
+
+[Unit]
+Description=Astro Pi Sensor Demo
+After=multi-user.target
+
+[Service]
+Type=idle
+WorkingDirectory=/home/pi/astro-pi-sensors
+ExecStart=/usr/bin/python3 /home/pi/astro-pi-sensors/multi_sensor.py > /home/pi/astro-pi-sensors/multi_sensor.log 2>&1
+ExecStopPost=/usr/bin/python3 /home/pi/astro-pi-sensors/clear_leds.py
+
+[Install]
+WantedBy=multi-user.target
