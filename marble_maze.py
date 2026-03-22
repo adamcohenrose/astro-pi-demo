@@ -1,20 +1,16 @@
 #!/usr/bin/python3
 
-# Based on the Marble Maze tutorial from Raspberry Pi
-# https://github.com/raspberrypilearning/sense-hat-marble-maze
-# Licenced under a Creative Commons Attribution 4.0 International License
-# http://creativecommons.org/licenses/by-sa/4.0/
-
-from sense_hat import SenseHat
+from sense_emu import SenseHat
 from time import sleep
+import random
 
-r = (255,0,0)
-o = (0,0,0)
-w = (255,255,255)
-g = (0,200,0)
+r = (255, 0, 0)
+o = (0, 0, 0)
+w = (255, 255, 255)
+g = (0, 200, 0)
+
 
 class MarbleMaze:
-
     def __init__(self, sense=None):
         if sense is None:
             self.sense = SenseHat()
@@ -22,22 +18,81 @@ class MarbleMaze:
         else:
             self.sense = sense
 
-        self.x, self.y = 1, 1
-        self.maze = []
+        self.maze: list[list[tuple[int, int, int]]] = []
         self.reset()
 
+    def generate_maze(self, width=8, height=8):
+        # Initialize grid with walls
+        maze: list[list[tuple[int, int, int]]] = [
+            [r for _ in range(width)] for _ in range(height)
+        ]
+
+        # Track visited nodes to ensure connectivity and find a far exit
+        visited = []
+
+        def walk(x, y):
+            maze[y][x] = o
+            visited.append((x, y))
+
+            # Directions: move 2 units to maintain 1px wall thickness
+            dirs = [(0, 2), (0, -2), (2, 0), (-2, 0)]
+            random.shuffle(dirs)
+
+            for dx, dy in dirs:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < width and 0 <= ny < height:
+                    if maze[ny][nx] == r:
+                        # Carve the path and the wall between
+                        maze[y + dy // 2][x + dx // 2] = o
+                        walk(nx, ny)
+                    elif random.random() < 0.2:
+                        # Create a loop/braid by knocking down a wall to an existing path
+                        maze[y + dy // 2][x + dx // 2] = o
+
+        # 1. Start at top-left
+        walk(0, 0)
+
+        # 2. BREAK THE BOTTOM AND RIGHT WALLS
+        # This logic looks at the edges and "leaks" the path into the 8th pixel
+        for i in range(0, 8, 2):
+            # Randomly open the right-most wall (column 7)
+            if random.random() < 0.5:
+                maze[i][7] = o
+                # Ensure it's connected to the cell to its left
+                maze[i][6] = o
+
+            # Randomly open the bottom-most wall (row 7)
+            if random.random() < 0.5:
+                maze[7][i] = o
+                # Ensure it's connected to the cell above it
+                maze[6][i] = o
+
+        # 3. Find all current passageways to pick an End point
+        all_passages = [(x, y) for y in range(8) for x in range(8) if maze[y][x] == o]
+
+        # Filter for "End" (g) points at least two corners away from (0,0)
+        # We define "far" as bottom-right quadrant or far edges
+        potential_ends = [(x, y) for (x, y) in all_passages if (x + y) >= 9]
+
+        if not potential_ends:
+            # Fallback to absolute bottom corner if the randomizer was stingy
+            maze[7][7] = o
+            potential_ends = [(7, 7)]
+
+        end_x, end_y = random.choice(potential_ends)
+
+        # 4. Place End
+        maze[end_y][end_x] = g
+
+        return maze
+
     def reset(self):
-        self.maze.clear()
-        self.maze.extend([[r,r,r,r,r,r,r,r],
-                          [r,o,o,o,o,o,o,r],
-                          [r,r,r,o,r,o,o,r],
-                          [r,o,r,o,r,r,r,r],
-                          [r,o,o,o,o,o,o,r],
-                          [r,o,r,r,r,r,o,r],
-                          [r,o,o,r,g,o,o,r],
-                          [r,r,r,r,r,r,r,r]])
+        self.maze = self.generate_maze()
+        self.x, self.y = 0, 0
 
     def check_wall(self, x, y, new_x, new_y):
+        if new_x < 0 or new_x > 7 or new_y < 0 or new_y > 7:
+            return x, y
         if self.maze[new_y][new_x] != r:
             return new_x, new_y
         elif self.maze[new_y][x] != r:
@@ -69,8 +124,8 @@ class MarbleMaze:
             max_y = min(y + frame, 8)
             for fill_x in range(min_x, max_x):
                 for fill_y in range(min_y, max_y):
-                    self.maze[fill_y][fill_x] = (240,240,0)
-            self.sense.set_pixels(sum(self.maze,[]))
+                    self.maze[fill_y][fill_x] = (240, 240, 0)
+            self.sense.set_pixels(sum(self.maze, []))
             sleep(0.1)
         sleep(0.3)
         self.sense.clear()
@@ -84,9 +139,8 @@ class MarbleMaze:
         if self.maze[self.y][self.x] == g:
             self.win_animation(self.x, self.y)
             self.reset()
-            self.x, self.y = 1, 1
         self.maze[self.y][self.x] = w
-        self.sense.set_pixels(sum(self.maze,[]))
+        self.sense.set_pixels(sum(self.maze, []))
         self.maze[self.y][self.x] = o
         sleep(0.05)
 
