@@ -90,7 +90,7 @@ class CohortRunner(BaseRunner):
     def _check_cancel(self, *args, **kwargs):
         """Internal check to see if we should bail out."""
         if self.stop_requested:
-            raise CancelExecution("Stopping student module")
+            raise CancelExecution(f"Stopping module {self.student_path}")
 
     def _run_with_mock(self):
         """Execute the student module in a cancellable way while mocking the SenseHat color."""
@@ -101,30 +101,30 @@ class CohortRunner(BaseRunner):
                     "cohort_module", self.module_path
                 )
                 if spec and spec.loader:
+                    print(f"starting student module {self.student_path}...")
                     module = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(module)
-                    print(f"Executing student module {self.student_path}")
                 else:
                     print(f"Failed to load student module {self.student_path}")
         except CancelExecution:
-            print("Stopping student module as requested")
+            pass
         except Exception as e:
             print(f"Error in student module {self.student_path}: {e}")
         finally:
-            print("setting stop_requested to false")
             self.stop_requested = False
             self.thread = None
 
     def main_loop(self):
         if not self.thread:
             self.stop_requested = False
-            print(f"starting student module {self.student_path}")
+            self.scanner.start()
             self.thread = threading.Thread(target=self._run_with_mock, daemon=True)
             self.thread.start()
 
     def stop(self):
         my_thread = self.thread
         if my_thread and my_thread.is_alive():
-            print(f"stopping student module {self.student_path}")
+            print(f"Stopping student module {self.student_path}...")
             self.stop_requested = True
             my_thread.join()
+            self.scanner.stop()
