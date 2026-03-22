@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from base_runner import BaseRunner
 from sense_hat import SenseHat
 
 humid_pixel = [0, 40, 220]
@@ -8,7 +9,8 @@ off_pixel = [0, 0, 0]
 max_humid = 100.0
 max_temp = 40.0
 
-class HumidTempGauge:
+
+class HumidTempGauge(BaseRunner):
     def __init__(self, sense=None):
         if sense is None:
             self.sense = SenseHat()
@@ -40,8 +42,9 @@ class HumidTempGauge:
 
         self.sense.set_pixels(pixels)
 
-    def finish(self):
+    def stop(self):
         self.sense.clear()
+
 
 if __name__ == "__main__":
     hg = HumidTempGauge()

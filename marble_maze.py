@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from base_runner import BaseRunner
 from sense_hat import SenseHat
 from time import sleep
 import random
@@ -10,7 +11,7 @@ w = (255, 255, 255)
 g = (0, 200, 0)
 
 
-class MarbleMaze:
+class MarbleMaze(BaseRunner):
     def __init__(self, sense=None):
         if sense is None:
             self.sense = SenseHat()
@@ -144,7 +145,7 @@ class MarbleMaze:
         self.maze[self.y][self.x] = o
         sleep(0.05)
 
-    def finish(self):
+    def stop(self):
         self.sense.clear()
 
 
