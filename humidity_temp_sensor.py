@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 from sense_hat import SenseHat
-from time import sleep
 
 humid_pixel = [0, 40, 220]
 temp_pixel = [240, 40, 0]

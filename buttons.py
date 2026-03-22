@@ -1,6 +1,4 @@
 import evdev
-import marble_maze
-import humidity_temp_sensor
 
 buttonA = evdev.ecodes.KEY_A
 buttonB = evdev.ecodes.KEY_B

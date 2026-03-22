@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+# Based on the Compass example from Raspberry Pi
+# https://github.com/astro-pi/python-sense-hat/blob/master/docs/examples/compass.py
+
 import sys
 from sense_hat import SenseHat
 
